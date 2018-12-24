@@ -414,6 +414,10 @@ int fpconv_dtoa(double d, ref char[24] dest)
         () {
             str_len = 3;
             if (bits & 0x000FFFFFFFFFFFFFU)
+            {
+                dest[0 .. 3] = "nan";
+            }
+            else
             {  
                 if (neg)
                 {
@@ -424,10 +428,6 @@ int fpconv_dtoa(double d, ref char[24] dest)
                 {
                     dest[0 .. 3] = "inf";
                 }                
-            }
-            else
-            {
-                dest[0 .. 3] = "nan";
             }
         } ();
         
@@ -458,10 +458,12 @@ static assert (() {
 } () == "3.14159");
 
 static assert (fpconv_dtoa(0.3) == "0.3");
-static assert (fpconv_dtoa(double.inf) == "inf");
-static assert (fpconv_dtoa(-double.inf) == "-inf");
+static assert (fpconv_dtoa(-double.infinity) == "-inf");
+static assert (fpconv_dtoa(double.infinity) == "inf");
 static assert (fpconv_dtoa(double.nan) == "nan");
 static assert (fpconv_dtoa(1.3f) == "1.3");
 static assert (fpconv_dtoa(65.221) == "65.221");
 static assert (fpconv_dtoa(1.3) == "1.3");
 static assert (fpconv_dtoa(0.3) == "0.3");
+
+
