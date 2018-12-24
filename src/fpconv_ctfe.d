@@ -6,7 +6,7 @@
 
 module fpconv_ctfe;
 
-enum npower = 87;
+enum npowers = 87;
 enum steppowers = 8;
 enum firstpower = -348; /* 10 ^ -348 */
 
@@ -18,7 +18,7 @@ struct Fp {
     int exp;
 };
 
-static immutable Fp[] powers_ten = [
+static immutable Fp[npowers] powers_ten = [
     { 18054884314459144840U, -1220 }, { 13451937075301367670U, -1193 },
     { 10022474136428063862U, -1166 }, { 14934650266808366570U, -1140 },
     { 11127181549972568877U, -1113 }, { 16580792590934885855U, -1087 },
@@ -69,23 +69,23 @@ Fp find_cachedpow10(int exp, int* k)
 {
     const double one_log_ten = 0.30102999566398114;
 
-    int approx = cast(int) (-(exp + 87) * one_log_ten);
-    int idx = (approx - -348) / 8;
+    int approx = cast(int) (-(exp + npowers) * one_log_ten);
+    int idx = (approx - firstpower) / 8;
 
     while(1) {
         int current = exp + powers_ten[idx].exp + 64;
 
-        if(current < -60) {
+        if(current < expmin) {
             idx++;
             continue;
         }
 
-        if(current > -32) {
+        if(current > expmax) {
             idx--;
             continue;
         }
 
-        *k = (-348 + idx * 8);
+        *k = (firstpower + idx * steppowers);
 
         return powers_ten[idx];
     }
@@ -359,7 +359,7 @@ static int emit_digits(char* digits, int ndigits, char* dest, int K, bool neg)
 
     return idx;
 }
-
+/+
 static int filter_special(double fp, char* dest)
 {
     if(fp == 0.0) {
@@ -384,31 +384,60 @@ static int filter_special(double fp, char* dest)
 
     return 3;
 }
-
++/
 int fpconv_dtoa(double d, ref char[24] dest)
 {
     char[18] digits;
-
     int str_len = 0;
     bool neg = 0;
-
-    if(get_dbits(d) & 0x8000000000000000U) {
+    ulong bits = (*(cast(ulong*)&d));
+    bool is_nan = ((bits & 0x7FF0000000000000U) == 0x7FF0000000000000U);
+    
+    if(bits & (1UL << 63)) {
         dest[0] = '-';
-        str_len++;
+        str_len = 1;
         neg = 1;
     }
 
-    int spec = filter_special(d, &dest[0] + str_len);
+    if (d == 0.0)
+    {
+       dest[0] = '0';
+       return 1;
+    }
 
-    if(spec) {
-        return str_len + spec;
+
+    if (is_nan) 
+    {
+        // this case is unlikely
+        // we are going to define it as delegate
+        // to give the compiler a chance to move it out
+        () {
+            str_len = 3;
+            if (bits & 0x000FFFFFFFFFFFFFU)
+            {  
+                if (neg)
+                {
+                    dest[1 .. 4] = "inf";
+                    str_len = 4;
+                }
+                else
+                {
+                    dest[0 .. 3] = "inf";
+                }                
+            }
+            else
+            {
+                dest[0 .. 3] = "nan";
+            }
+        } ();
+        
+        return str_len;
     }
 
     int K = 0;
-    int ndigits = grisu2(d, &digits[0], &K);
-
+    auto ndigits = grisu2(d, &digits[0], &K);
+  
     str_len += emit_digits(&digits[0], ndigits, &dest[0] + str_len, K, neg);
-
     return str_len;
 }
 
@@ -428,8 +457,11 @@ static assert (() {
     return buffer[0 .. len].idup;
 } () == "3.14159");
 
-
+static assert (fpconv_dtoa(0.3) == "0.3");
+static assert (fpconv_dtoa(double.inf) == "inf");
+static assert (fpconv_dtoa(-double.inf) == "-inf");
+static assert (fpconv_dtoa(double.nan) == "nan");
+static assert (fpconv_dtoa(1.3f) == "1.3");
 static assert (fpconv_dtoa(65.221) == "65.221");
-
-
 static assert (fpconv_dtoa(1.3) == "1.3");
+static assert (fpconv_dtoa(0.3) == "0.3");
