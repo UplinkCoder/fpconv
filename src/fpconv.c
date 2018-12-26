@@ -99,7 +99,7 @@ static Fp multiply(Fp* a, Fp* b)
     uint64_t al_bl = (a->frac & lomask) * (b->frac & lomask);
     uint64_t ah_bh = (a->frac >> 32)    * (b->frac >> 32);
 
-    uint64_t tmp = (ah_bl & lomask) + (al_bh & lomask) + (al_bl >> 32); 
+    uint64_t tmp = (ah_bl & lomask) + (al_bh & lomask) + (al_bl >> 32);
     /* round up */
     tmp += 1U << 31;
 
