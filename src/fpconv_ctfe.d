@@ -1,5 +1,4 @@
 
-
 /** Port of grisu2 implementation by night-shift
    https://github.com/night-shift/fpconv
    Converted to (CTFEable) D by Stefan Koch */
@@ -195,7 +194,7 @@ void round_digit(char* digits, int ndigits, ulong delta, ulong rem, ulong kappa,
     }
 }
 
-int generate_digits(Fp* fp, Fp* upper, Fp* lower, char* digits, int* K)
+int generate_digits(const Fp* fp, const Fp* upper, const Fp* lower, char* digits, int* K)
 {
     ulong wfrac = upper.frac - fp.frac;
     ulong delta = upper.frac - lower.frac;
@@ -315,7 +314,7 @@ static int emit_digits(char* digits, int ndigits, char* dest, int K, bool neg)
             dest[0 .. offset] = digits[0 .. offset];
             dest[offset] = '.';
             //memcpy(dest + offset + 1, digits + offset, ndigits - offset);
-            dest[offset + 1 .. 1 + ndigits] = (digits + offset)[0 .. ndigits - offset];
+            dest[offset + 1 .. 1 + ndigits] = digits[offset .. ndigits];
 
             return ndigits + 1;
         }
