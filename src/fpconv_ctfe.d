@@ -17,6 +17,10 @@ struct Fp {
     int exp;
 };
 
+enum seperate_arrays = 1;
+
+static if (seperate_arrays)
+{
 static immutable int[npowers] powers_ten_exps = 
 [-1220, -1193, -1166, -1140,
  -1113, -1087, -1060, -1034,
@@ -73,9 +77,9 @@ static immutable ulong[npowers] powers_ten_fracs =
  13772540099066387757LU, 10261342003245940623LU, 15290591125556738113LU,
  11392378155556871081LU, 16975966327722178521LU, 12648080533535911531LU
 ];
-
-/+
-
+}
+else
+{
 static immutable Fp[npowers] powers_ten = [
     { 18054884314459144840U, -1220 }, { 13451937075301367670U, -1193 },
     { 10022474136428063862U, -1166 }, { 14934650266808366570U, -1140 },
@@ -122,7 +126,8 @@ static immutable Fp[npowers] powers_ten = [
     { 11392378155556871081U, 1013 }, { 16975966327722178521U, 1039 },
     { 12648080533535911531U, 1066 }
 ];
-+/
+}
+
 
 Fp find_cachedpow10(int exp, int* k)
 {
@@ -132,8 +137,14 @@ Fp find_cachedpow10(int exp, int* k)
     int idx = (approx - firstpower) / 8;
 
     while(1) {
+        static if (seperate_arrays)
+        {
         int current = exp + powers_ten_exps[idx] + 64;
-
+        }
+        else
+        {
+        int current = exp + powers_ten[idx].exp + 64;
+        }
         if(current < expmin) {
             idx++;
             continue;
@@ -145,7 +156,14 @@ Fp find_cachedpow10(int exp, int* k)
         }
 
         *k = (firstpower + idx * steppowers);
+        static if (seperate_arrays)
+        {
         auto result = Fp(powers_ten_fracs[idx], powers_ten_exps[idx]);
+        }
+        else
+        {
+            auto result = powers_ten[idx];
+        }
         return result;
     }
 }
@@ -511,9 +529,7 @@ string fpconv_dtoa(double d)
 }
 
 static assert (() {
-    char[24] buffer;
-    int len = fpconv_dtoa(3.14159, buffer);
-    return buffer[0 .. len].idup;
+    return fpconv_dtoa(3.14159);
 } () == "3.14159");
 
 static assert (fpconv_dtoa(0.3) == "0.3");
@@ -524,3 +540,6 @@ static assert (fpconv_dtoa(1.3f) == "1.3");
 static assert (fpconv_dtoa(65.221) == "65.221");
 static assert (fpconv_dtoa(1.3) == "1.3");
 static assert (fpconv_dtoa(0.3) == "0.3");
+
+// import std.format;
+// static immutable s = format("%s", 0.3);
