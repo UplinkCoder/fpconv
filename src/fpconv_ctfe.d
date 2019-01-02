@@ -12,13 +12,17 @@ enum firstpower = -348; /* 10 ^ -348 */
 enum expmax = -32;
 enum expmin = -60;
 
-enum expbits = 10; // 64 - 1 /*for signbit*/ - 1 /*for hiddenbit*/ - fracbits;  
+enum expbits = 11; // 64 - 1 /*for signbit*/ - fracbits;
 enum fracbits = 52;
+
 enum fracmask = (1UL << fracbits) - 1;
 enum hiddenbit =  (1UL << fracbits);
-enum expmask = 0x7FF0000000000000UL;
-enum signbit = (1UL << 63); // 1 << (64 - 1)
-enum expbias = (((1 << expbits) -1) + fracbits);
+enum expmask = ((1UL << expbits) - 1) << fracbits;
+enum signbit = (1UL << (double.sizeof * 8) -1); // 1 << (64 - 1)
+enum expbias = (((1 << (expbits - 1)) -1) + fracbits);
+
+static assert(fracbits + expbits + 1 == (double.sizeof * 8));
+
 
 struct Fp {
     ulong frac;
@@ -457,13 +461,13 @@ static int filter_special(double fp, char* dest)
 
     ulong bits = get_dbits(fp);
 
-   bool nan = (bits & 0x7FF0000000000000U) == 0x7FF0000000000000U;
+    bool nan = (bits & expmask) == expmask;
 
     if(!nan) {
         return 0;
     }
 
-    if(bits & 0x000FFFFFFFFFFFFFU) {
+    if(bits & fracmask) {
         dest[0] = 'n'; dest[1] = 'a'; dest[2] = 'n';
 
     } else {
