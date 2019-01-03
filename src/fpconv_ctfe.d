@@ -154,12 +154,13 @@ Fp find_cachedpow10(int exp, int* k)
     while(1) {
         static if (seperate_arrays)
         {
-        int current = exp + powers_ten_exps[idx] + 64;
+            int current = exp + powers_ten_exps[idx] + 64;
         }
         else
         {
-        int current = exp + powers_ten[idx].exp + 64;
+            int current = exp + powers_ten[idx].exp + 64;
         }
+
         if(current < expmin) {
             idx++;
             continue;
@@ -171,14 +172,16 @@ Fp find_cachedpow10(int exp, int* k)
         }
 
         *k = (firstpower + idx * steppowers);
+
         static if (seperate_arrays)
         {
-        auto result = Fp(powers_ten_fracs[idx], powers_ten_exps[idx]);
+            auto result = Fp(powers_ten_fracs[idx], powers_ten_exps[idx]);
         }
         else
         {
             auto result = powers_ten[idx];
         }
+
         return result;
     }
 }
@@ -210,13 +213,31 @@ Fp build_fp(double d)
     if(fp.exp) {
         fp.frac += hiddenbit;
         fp.exp -= expbias;
-
     } else {
         fp.exp = -(expbias) + 1;
     }
 
     return fp;
 }
+
+double build_double(Fp fp)
+{
+  ulong bits;
+  if (fp.exp == -(expbias) + 1)
+  {
+      bits = fp.frac;
+  }
+  else
+  {
+     bits = fp.frac - hiddenbit;
+     bits |= ulong(fp.exp + expbias) << 52; 
+  }
+
+  double r = *(cast(double*) &bits);
+  return r; 
+}
+
+pragma(msg, ( build_fp(double.max).build_double));
 
 void normalize(Fp* fp)
 {
@@ -282,7 +303,7 @@ void round_digit(char* digits, int ndigits, ulong delta, ulong rem, ulong kappa,
     while (rem < frac && delta - rem >= kappa &&
            (rem + kappa < frac || frac - rem > rem + kappa - frac)) {
 
-        digits[ndigits - 1]--;
+        --digits[ndigits - 1];
         rem += kappa;
     }
 }
@@ -379,7 +400,7 @@ static int emit_digits(char* digits, int ndigits, char* dest, int K, bool neg)
     if(K >= 0 && (exp < (ndigits + 7))) {
         dest[0 .. ndigits] = digits[0 .. ndigits];
         //memcpy(dest, digits, ndigits);
-        dest[ndigits .. ndigits + K] =  0;
+        dest[ndigits .. ndigits + K] =  '0';
         //memset(dest + ndigits, '0', K);
 
         return ndigits + K;
@@ -395,7 +416,7 @@ static int emit_digits(char* digits, int ndigits, char* dest, int K, bool neg)
             dest[1] = '.';
 
             //memset(dest + 2, '0', offset);
-            dest[2 .. 2 + offset] = 0;
+            dest[2 .. 2 + offset] = '0';
             //memcpy(dest + offset + 2, digits, ndigits);
             dest[2 + offset .. 2 + offset + ndigits] = digits[0 .. ndigits];
 
@@ -554,4 +575,33 @@ static assert (fpconv_dtoa(1.3f) == "1.3");
 static assert (fpconv_dtoa(65.221) == "65.221");
 static assert (fpconv_dtoa(1.3) == "1.3");
 static assert (fpconv_dtoa(0.3) == "0.3");
+static assert (fpconv_dtoa(10) == "10");
 static assert (fpconv_dtoa(double.max) == "1.7976931348623157e+308");
+
+/+
+pragma(msg, () {
+    string[] result;
+    result.length = npowers * 2;
+    foreach(idx; 0 .. npowers * 2)
+    {
+        const idx2 = idx / 2;
+        if (idx & 1)
+        {
+            static if (seperate_arrays)
+            {
+                auto fp = Fp(powers_ten_fracs[idx2], powers_ten_exps[idx2]);
+            }
+            else
+            {
+                auto fp = powers_ten[idx2];
+            }
+            result[idx] = fpconv_dtoa(build_double(fp));
+        }
+        else
+        {
+            result[idx] = fpconv_dtoa(idx2);
+        }
+    }
+    return result;
+} ());
++/
