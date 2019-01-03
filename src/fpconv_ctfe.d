@@ -208,7 +208,7 @@ Fp build_fp(double d)
 
     Fp fp;
     fp.frac = bits & fracmask;
-    fp.exp = (bits & expmask) >> 52;
+    fp.exp = (bits & expmask) >> fracbits;
 
     if(fp.exp) {
         fp.frac += hiddenbit;
@@ -230,14 +230,14 @@ double build_double(Fp fp)
   else
   {
      bits = fp.frac - hiddenbit;
-     bits |= ulong(fp.exp + expbias) << 52; 
+     bits |= ((ulong(fp.exp + expbias) << fracbits) & expmask); 
   }
 
   double r = *(cast(double*) &bits);
   return r; 
 }
 
-pragma(msg, ( build_fp(double.max).build_double.fpconv_dtoa));
+static assert (build_fp(double.max).build_double == double.max);
 
 void normalize(Fp* fp)
 {
