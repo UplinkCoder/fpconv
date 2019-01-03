@@ -554,3 +554,4 @@ static assert (fpconv_dtoa(1.3f) == "1.3");
 static assert (fpconv_dtoa(65.221) == "65.221");
 static assert (fpconv_dtoa(1.3) == "1.3");
 static assert (fpconv_dtoa(0.3) == "0.3");
+static assert (fpconv_dtoa(double.max) == "1.7976931348623157e+308");
