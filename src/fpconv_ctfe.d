@@ -579,6 +579,9 @@ static assert (fpconv_dtoa(0.3) == "0.3");
 static assert (fpconv_dtoa(10) == "10");
 static assert (fpconv_dtoa(double.max) == "1.7976931348623157e+308");
 
+// printf can't handle this one ;)
+static assert (fpconv_dtoa(0.3049589) == "0.3049589");
+
 /+
 pragma(msg, () {
     string[] result;
