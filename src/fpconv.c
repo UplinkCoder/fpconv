@@ -281,12 +281,13 @@ static int emit_digits(char* digits, int ndigits, char* dest, int K, bool neg)
 
 static int filter_special(double fp, char* dest)
 {
+    uint64_t bits = get_dbits(fp);
+
     if(fp == 0.0) {
         dest[0] = '0';
         return 1;
     }
 
-    uint64_t bits = get_dbits(fp);
 
     bool nan = (bits & expmask) == expmask;
 
