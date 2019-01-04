@@ -237,7 +237,7 @@ double build_double(Fp fp)
   return r; 
 }
 
-pragma(msg, ( build_fp(double.max).build_double));
+pragma(msg, ( build_fp(double.max).build_double.fpconv_dtoa));
 
 void normalize(Fp* fp)
 {
@@ -475,12 +475,13 @@ static int emit_digits(char* digits, int ndigits, char* dest, int K, bool neg)
 /+
 static int filter_special(double fp, char* dest)
 {
-    if(fp == 0.0) {
+    ulong bits = get_dbits(fp);
+
+    if((bits & ~signbit) == 0) {
         dest[0] = '0';
         return 1;
     }
 
-    ulong bits = get_dbits(fp);
 
     bool nan = (bits & expmask) == expmask;
 
@@ -498,7 +499,7 @@ static int filter_special(double fp, char* dest)
     return 3;
 }
 +/
-int fpconv_dtoa(double d, ref char[24] dest)
+int fpconv_dtoa(double d, /*ref char[24]*/ char* dest)
 {
     char[18] digits;
     int str_len = 0;
@@ -512,10 +513,10 @@ int fpconv_dtoa(double d, ref char[24] dest)
         neg = 1;
     }
 
-    if (d == 0.0)
+    if ((bits & ~signbit) == 0)
     {
-       dest[0] = '0';
-       return 1;
+       dest[str_len] = '0';
+       return ++str_len;
     }
 
 
@@ -557,15 +558,15 @@ int fpconv_dtoa(double d, ref char[24] dest)
 string fpconv_dtoa(double d)
 {
     char[24] buffer;
-    const len = fpconv_dtoa(d, buffer);
+    const len = fpconv_dtoa(d, &buffer[0]);
     auto result = new char[](len);
     result[0 .. len] = buffer[0 .. len];
     return cast(string) result;
 }
 
-static assert (() {
+static assert(() {
     return fpconv_dtoa(3.14159);
-} () == "3.14159");
+} ()  == "3.14159");
 
 static assert (fpconv_dtoa(0.3) == "0.3");
 static assert (fpconv_dtoa(-double.infinity) == "-inf");
